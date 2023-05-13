@@ -62,7 +62,7 @@ export async function updateClientes(req,res){
         const cliente = await db.query(`SELECT * FROM customers WHERE id=$1;`, [id])
         if(cliente.rows.length === 0 ) return res.status(404).send("Usuario não encontrado")
         
-        const cpfCheck = await db.query(`SELECT * FROM customers WHERE cpf='${cpf}';`)
+        const cpfCheck = await db.query(`SELECT * FROM customers WHERE cpf='${cpf}' AND id!='${id}'`)
         if(cpfCheck.rows.length !== 0) return res.status(409).send("Usuario já cadastrado")
         const formattedDate = dayjs(birthday).format('YYYY-MM-DD')
 

@@ -1,10 +1,17 @@
 import {db} from "../database/database.js"
+import dayjs from "dayjs"
 
 export async function getClientes(req,res){
 
     try{
         const clientes = await db.query(`SELECT * FROM customers`)
-        res.status(200).send(clientes.rows)
+        const formattedCientes = clientes.rows.map(cliente => {
+            return {
+                ...cliente,
+                birthday: dayjs(cliente.birthday).format('YYYY-MM-DD')
+            }
+        })
+        res.status(200).send(formattedCientes)
     }catch(err){
         return res.status(500).send(err.message)
     }
@@ -13,14 +20,14 @@ export async function getClientes(req,res){
 
 export async function postClientes(req,res){
     const {name, phone, cpf, birthday} = req.body
-    console.log(name, phone, cpf, birthday)
 
     try{
         const cpfCheck = await db.query(`SELECT * FROM customers WHERE cpf = '${cpf}';`)
         if(cpfCheck.rows.length !== 0 ) return res.status(409).send("Ciente já cadastrado")
 
+        const formattedDate = dayjs(birthday).format('YYYY-MM-DD')
         await db.query(`INSERT INTO customers (name, phone, cpf, birthday) 
-                        VALUES ('${name}', '${phone}', '${cpf}', '${birthday}');`)
+                        VALUES ('${name}', '${phone}', '${cpf}', '${formattedDate}');`)
         
         res.sendStatus(201)
 

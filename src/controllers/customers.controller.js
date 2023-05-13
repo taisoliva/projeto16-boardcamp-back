@@ -42,7 +42,13 @@ export async function buscarClientes(req,res){
     try{
         const cliente = await db.query(`SELECT * FROM customers WHERE id=$1;`, [id])
         if(cliente.rows.length === 0 ) return res.status(404).send("Usuario não encontrado")
-        res.send(cliente.rows[0])
+        const formattedCientes = cliente.rows.map(client => {
+            return {
+                ...client,
+                birthday: dayjs(client.birthday).format('YYYY-MM-DD')
+            }
+        })
+        res.send(formattedCientes)
     }catch(err){
         return res.status(500).send(err.message)
     }
@@ -59,10 +65,11 @@ export async function updateClientes(req,res){
         const cpfCheck = await db.query(`SELECT * FROM customers WHERE cpf='${cpf}' AND id!='${id}'`)
         if(cpfCheck.rows.length !== 0) return res.status(409).send("Usuario já cadastrado")
 
+        const formattedDate = dayjs(birthday).format('YYYY-MM-DD')
         await db.query(`UPDATE customers SET 
                                         name='${name}', 
                                         phone='${phone}', 
-                                        birthday='${birthday}'
+                                        birthday='${formattedDate}'
                                 WHERE id=$1`, [id])
        
         console.log(cliente.rows[0].cpf)

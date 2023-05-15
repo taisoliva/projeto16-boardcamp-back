@@ -95,7 +95,7 @@ export async function finishRentals(req, res){
             const refreshRental = formattedRental.map(rental => {
                 return{
                     ...rental,
-                    delayFee:((diferenca - rental.daysRented)*rental.originalPrice)
+                    delayFee:((diferenca - rental.daysRented)*(rental.originalPrice/rental.daysRented))
                 }
             })
             await db.query(`UPDATE rentals SET "returnDate"=$1, "delayFee"=$2 WHERE id=$3`, [refreshRental[0].returnDate, refreshRental[0].delayFee,id])

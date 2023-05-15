@@ -74,8 +74,54 @@ export async function postRentals(req,res){
 
 export async function finishRentals(req, res){
 
+    const {id} = req.params
+
+    try{
+
+        const data = await db.query(`SELECT * FROM rentals WHERE id=$1`, [id])
+        if(data.rows.length === 0) return res.status(404).send("Aluguel não existe")
+        if(data.rows[0].returnDate !== null) return res.status(400).send("Aluguel Finalizado")
+
+        const formattedRental = data.rows.map(rental => {
+            return {
+                ...rental,
+                rentDate: dayjs(rental.rentDate).format('YYYY-MM-DD'),
+                returnDate: dayjs().format('YYYY-MM-DD'),
+            }
+        })
+        
+        const diferenca = dayjs(formattedRental[0].returnDate).diff(formattedRental[0].rentDate, 'day')
+        if(diferenca > formattedRental[0].daysRented){
+            const refreshRental = formattedRental.map(rental => {
+                return{
+                    ...rental,
+                    delayFee:((diferenca - rental.daysRented)*rental.originalPrice)
+                }
+            })
+            await db.query(`UPDATE rentals SET "returnDate"=$1, "delayFee"=$2 WHERE id=$3`, [refreshRental[0].returnDate, refreshRental[0].delayFee,id])
+        } else {
+            await db.query(`UPDATE rentals SET "returnDate"=$1, "delayFee"=$2 WHERE id=$3`, [formattedRental[0].returnDate, 0,id])
+        }
+        
+        res.sendStatus(200)
+    }catch(err){
+        return res.status(500).send(err.message)
+    }
+
 }
 
 export async function deleteRentals(req,res){
+    
+    const {id} = req.params
 
+    try{
+        const data = await db.query(`SELECT * FROM rentals WHERE id=$1`, [id])
+        if(data.rows.length === 0) return res.status(404).send("Aluguel não existe")
+        if(data.rows[0].returnDate === null) return res.status(400).send("Aluguel não finalizado")
+
+        await db.query(`DELETE FROM rentals WHERE id=$1`, [id])
+        res.sendStatus(200)
+    } catch(err){
+        return res.status(500).send(err.message)
+    }
 }
